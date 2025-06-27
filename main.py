@@ -1,9 +1,12 @@
 import cv2
-import pyperclip
 import numpy as np
+from color_utils import *
+from color_names import get_color_name
+from palette_generator import *
+from clipboard import copy_with_message
 
 # Read the image
-img_path = 'new.png'
+img_path = 'new.jpg'
 img = cv2.imread(img_path)
 if img is None:
     print(f"Error: Could not load image at {img_path}")
@@ -19,48 +22,6 @@ except Exception as e:
 # Global variables
 clicked = False
 r = g = b = xpos = ypos = 0
-
-# Color format conversion functions
-def rgb_to_hex(r, g, b):
-    return "#{:02x}{:02x}{:02x}".format(r, g, b)
-
-def rgb_to_hsv(r, g, b):
-    rgb = np.uint8([[[r, g, b]]])
-    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
-    return tuple(hsv[0][0])
-
-def rgb_to_cmyk(r, g, b):
-    r, g, b = r/255.0, g/255.0, b/255.0
-    k = 1 - max(r, g, b)
-    c = (1 - r - k) / (1 - k) if (1 - k) != 0 else 0
-    m = (1 - g - k) / (1 - k) if (1 - k) != 0 else 0
-    y = (1 - b - k) / (1 - k) if (1 - k) != 0 else 0
-    return (round(c*100), round(m*100), round(y*100), round(k*100))
-
-def get_color_name(r, g, b):
-    # Basic color name detection
-    if r > 200 and g < 50 and b < 50:
-        return "Red"
-    elif r < 50 and g > 200 and b < 50:
-        return "Green"
-    elif r < 50 and g < 50 and b > 200:
-        return "Blue"
-    elif r > 200 and g > 200 and b < 50:
-        return "Yellow"
-    elif r > 200 and g < 50 and b > 200:
-        return "Magenta"
-    elif r < 50 and g > 200 and b > 200:
-        return "Cyan"
-    elif r > 200 and g > 200 and b > 200:
-        return "White"
-    elif r < 50 and g < 50 and b < 50:
-        return "Black"
-    else:
-        return "Custom Color"
-
-def copy_with_message(text, format_name):
-    pyperclip.copy(text)
-    print(f"Successfully copied {format_name} to clipboard: {text}")
 
 # Mouse callback
 def draw_function(event, x, y, flags, param):
@@ -81,6 +42,10 @@ def draw_function(event, x, y, flags, param):
         rgb_text = f"{r}, {g}, {b}"
         hex_color = rgb_to_hex(r, g, b)
         h, s, v = rgb_to_hsv(r, g, b)
+        # Ensure HSV values are properly scaled and clamped
+        h = min(360, max(0, round(h * 360)))
+        s = min(100, max(0, round(s * 100)))
+        v = min(100, max(0, round(v * 100)))
         hsv_text = f"{h}°, {s}%, {v}%"
         
         # Check if click is on color info area (y between 20-150)
